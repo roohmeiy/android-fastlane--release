@@ -1,0 +1,146 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# FASTFILE - Android Build & Deployment Automation
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Available Lanes:
+#   - build_only    : Just build APK & AAB (no upload)
+#   - test          : Run unit tests
+#   - alpha         : Build & deploy to Alpha track
+#   - beta          : Build & deploy to Beta track
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+default_platform(:android)
+
+platform :android do
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # BUILD ONLY LANE
+  # ═══════════════════════════════════════════════════════════════════════════
+  desc "Build APK and AAB without uploading"
+  lane :build_only do
+    UI.message("🔨 Building Release APK & AAB...")
+    
+    # Increment version code
+    increment_version_code_in_project_gradle
+    
+    # Build APK
+    gradle(
+      task: "clean assembleRelease"
+    )
+    
+    # Build AAB
+    gradle(
+      task: "bundleRelease"
+    )
+    
+    UI.success("✅ Build completed successfully!")
+  end
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # TEST LANE
+  # ═══════════════════════════════════════════════════════════════════════════
+  desc "Run unit tests"
+  lane :test do
+    UI.message("🧪 Running Unit Tests...")
+    
+    gradle(task: "test")
+    
+    UI.success("✅ All tests passed!")
+  end
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ALPHA LANE
+  # ═══════════════════════════════════════════════════════════════════════════
+  desc "Deploy to Alpha track"
+  lane :alpha do
+    UI.message("🚀 Deploying to Alpha...")
+    
+    # Build first
+    build_only
+    
+    # Upload to Play Store - Alpha track
+    upload_to_play_store(
+      track: "alpha",
+      aab: "app/build/outputs/bundle/release/app-release.aab",
+      json_key: "fastlane/play-store-credentials.json",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+    
+    UI.success("✅ Deployed to Alpha!")
+  end
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # BETA LANE
+  # ═══════════════════════════════════════════════════════════════════════════
+  desc "Deploy to Beta track"
+  lane :beta do
+    UI.message("🚀 Deploying to Beta...")
+    
+    # Build first
+    build_only
+    
+    # Upload to Play Store - Beta track
+    upload_to_play_store(
+      track: "beta",
+      aab: "app/build/outputs/bundle/release/app-release.aab",
+      json_key: "fastlane/play-store-credentials.json",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+    
+    UI.success("✅ Deployed to Beta!")
+  end
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PROMOTE LANES
+  # ═══════════════════════════════════════════════════════════════════════════
+  desc "Promote Alpha to Beta"
+  lane :promote_alpha_to_beta do
+    upload_to_play_store(
+      track: "alpha",
+      track_promote_to: "beta",
+      json_key: "fastlane/play-store-credentials.json",
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+    
+    UI.success("✅ Promoted Alpha build to Beta!")
+  end
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # HELPER METHODS
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  # Increment version code in build.gradle
+  private_lane :increment_version_code_in_project_gradle do
+    path = '../app/build.gradle'
+    re = /versionCode\s+(\d+)/
+
+    s = File.read(path)
+    version_code = s[re, 1].to_i
+    new_version_code = version_code + 1
+    
+    s[re, 1] = new_version_code.to_s
+
+    f = File.new(path, 'w')
+    f.write(s)
+    f.close
+    
+    UI.message("📈 Version code incremented: #{version_code} → #{new_version_code}")
+  end
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ERROR HANDLING
+  # ─────────────────────────────────────────────────────────────────────────────
+  error do |lane, exception|
+    UI.error("❌ Build failed in lane: #{lane}")
+    UI.error("Error: #{exception.message}")
+  end
+
+end

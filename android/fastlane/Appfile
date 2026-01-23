@@ -1,0 +1,9 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# APPFILE - App Configuration for Fastlane
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Your app's package name (application ID)
+package_name("com.yourcompany.yourapp")
+
+# Path to your Google Play Store service account JSON key
+json_key_file("fastlane/play-store-credentials.json")

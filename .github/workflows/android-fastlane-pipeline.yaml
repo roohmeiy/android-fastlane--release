@@ -1,0 +1,115 @@
+name: Build & Deploy Android with Fastlane
+
+on:
+  push:
+    branches:
+      - beta
+      - alpha
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: 'Fastlane lane to run'
+        required: true
+        default: 'beta'
+        type: choice
+        options:
+          - build_only
+          - alpha
+          - beta
+
+env:
+  JAVA_VERSION: '17'
+  RUBY_VERSION: '3.2'
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy with Fastlane
+    runs-on: ubuntu-latest
+    
+    steps:
+      # ══════════════════════════════════════════════════════════════
+      # SETUP PHASE
+      # ══════════════════════════════════════════════════════════════
+      
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: 💎 Set up Ruby ${{ env.RUBY_VERSION }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: android
+
+      # ══════════════════════════════════════════════════════════════
+      # CACHING
+      # ══════════════════════════════════════════════════════════════
+      
+      - name: 📦 Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # ══════════════════════════════════════════════════════════════
+      # ENVIRONMENT SETUP
+      # ══════════════════════════════════════════════════════════════
+      
+      - name: 🛠️ Run production setup script
+        run: |
+          chmod +x ./scripts/prodSetup.sh
+          bash ./scripts/prodSetup.sh
+
+      - name: 🔧 Grant execute permission for gradlew
+        run: chmod +x ./android/gradlew
+
+      # ══════════════════════════════════════════════════════════════
+      # FASTLANE EXECUTION
+      # ══════════════════════════════════════════════════════════════
+      
+      - name: 🎯 Set Fastlane Lane
+        id: lane
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "lane=${{ github.event.inputs.lane }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/alpha" ]; then
+            echo "lane=alpha" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/beta" ]; then
+            echo "lane=beta" >> $GITHUB_OUTPUT
+          else
+            echo "lane=build_only" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🚀 Run Fastlane
+        working-directory: android
+        run: |
+          bundle exec fastlane ${{ steps.lane.outputs.lane }}
+
+      # ══════════════════════════════════════════════════════════════
+      # ARTIFACT UPLOAD
+      # ══════════════════════════════════════════════════════════════
+      
+      - name: 📤 Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
+          retention-days: 30
+
+      - name: 📤 Upload AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          retention-days: 30
