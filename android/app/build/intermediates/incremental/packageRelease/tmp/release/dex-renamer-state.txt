@@ -1,0 +1,4 @@
+#Sun Jan 25 17:51:14 IST 2026
+base.0=/home/payal/Downloads/android-fastlane-alpha-beta/android/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+renamed.0=classes.dex
+path.0=classes.dex
