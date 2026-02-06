@@ -1,6 +1,7 @@
 # 🚀 Android CI/CD with Fastlane (Alpha & Beta)
 
 Simple build and deployment pipeline for Android apps.
+Note: The fastlane file is written keeping in mind that code will use flavours(stg, uat, prod). If you don't use flavours then you have to change the aab path
 
 ## 📁 Folder Structure
 
