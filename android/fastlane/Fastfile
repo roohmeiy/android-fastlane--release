@@ -57,7 +57,7 @@ platform :android do
     build_only
     
     # Find the AAB file
-    aab_path = Dir["app/build/outputs/bundle/prodConfigRelease/*.aab"].first
+    aab_path = Dir["android/app/build/outputs/bundle/prodConfigRelease/*.aab"].first
     UI.message("📦 Found AAB at: #{aab_path}")
     
     # Upload to Play Store - Alpha track
@@ -85,7 +85,7 @@ platform :android do
     build_only
     
     # Find the AAB file
-    aab_path = Dir["app/build/outputs/bundle/prodConfigRelease/*.aab"].first
+    aab_path = Dir["sndroid/app/build/outputs/bundle/prodConfigRelease/*.aab"].first
     UI.message("📦 Found AAB at: #{aab_path}")
     
     # Upload to Play Store - Beta track
