@@ -20,10 +20,7 @@ platform :android do
   desc "Build APK and AAB without uploading"
   lane :build_only do
     UI.message("🔨 Building Release APK & AAB...")
-    
-    # Increment version code
     increment_version_code_in_project_gradle
-    
     # Build APK
     gradle(
       task: "clean assembleRelease"
@@ -59,12 +56,17 @@ platform :android do
     # Build first
     build_only
     
+    # Find the AAB file
+    aab_path = Dir["app/build/outputs/bundle/prodConfigRelease/*.aab"].first
+    UI.message("📦 Found AAB at: #{aab_path}")
+    
     # Upload to Play Store - Alpha track
     upload_to_play_store(
       track: "alpha",
-      aab: "app/build/outputs/bundle/release/app-release.aab",
-      json_key: "fastlane/play-store-credentials.json",
+      aab: aab_path,
+      json_key_data: ENV['PLAY_STORE_JSON_KEY'], 
       skip_upload_metadata: true,
+      skip_upload_apk: true,
       skip_upload_images: true,
       skip_upload_screenshots: true
     )
@@ -82,11 +84,16 @@ platform :android do
     # Build first
     build_only
     
+    # Find the AAB file
+    aab_path = Dir["app/build/outputs/bundle/prodConfigRelease/*.aab"].first
+    UI.message("📦 Found AAB at: #{aab_path}")
+    
     # Upload to Play Store - Beta track
     upload_to_play_store(
       track: "beta",
-      aab: "app/build/outputs/bundle/release/app-release.aab",
-      json_key: "fastlane/play-store-credentials.json",
+      aab: aab_path,
+      json_key_data: ENV['PLAY_STORE_JSON_KEY'], 
+      skip_upload_apk: true,
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true
@@ -103,7 +110,8 @@ platform :android do
     upload_to_play_store(
       track: "alpha",
       track_promote_to: "beta",
-      json_key: "fastlane/play-store-credentials.json",
+      json_key_data: ENV['PLAY_STORE_JSON_KEY'],  
+      skip_upload_apk: true,
       skip_upload_aab: true,
       skip_upload_metadata: true,
       skip_upload_images: true,
